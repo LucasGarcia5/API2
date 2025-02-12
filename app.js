@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt"; //Criptografa senhas
 import jwt from "jsonwebtoken"; //Criar e validar tokens JWT
 import dotenv from "dotenv"; //Ambiente com arquivo .env
-import User from "./models/usuarioModels.js"
+import User from "./models/usuarioModels.js";
+import res from "express/lib/response.js";
 
 dotenv.config(); //Carregar as variaveis de ambientes do arquivo .evn
 
@@ -16,8 +17,37 @@ app.get("/", (req, res) => {
   res.status(200).json({ mgs: "Bem vindo a nossa API " });
 });
 
+app.get("user/:id", async (req, res) => {
+  const id = (res = URLSearchParams.id);
+
+  const user = await User.findById(id, "-password");
+
+  if (!user) {
+    res.status(404).json({ mgs: "Usuario não encontrado" });
+  }
+
+  res.status(200).json({ user });
+});
+
+function checktoken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.splint(" ")[1];
+
+  if (!token) return res.status(401).json({ mgs: "Acesso negado" });
+
+  try {
+    const secret = process.env.SECRET;
+
+    jwt.verify(token, secret);
+
+    next();
+  } catch (err) {
+    res.status(400).json({ msg: "O token é invalido!" });
+  }
+}
+
 //Criação de usuario
-app.post("/auth/register", async (req, res) => {
+app.post("/register", async (req, res) => {
   const { name, email, password, confirmpassword } = req.body;
 
   if (!name) {
@@ -38,7 +68,7 @@ app.post("/auth/register", async (req, res) => {
   const userExists = await User.findOne({ email: email });
 
   if (userExists) {
-    return res.status(422).json({ msg: "Por afvor, utilize outro E-mail" });
+    return res.status(422).json({ msg: "Por favor, utilize outro E-mail" });
   }
 
   const salt = await bcrypt.genSalt(12); //Gera um salt para criptografar a senha
@@ -54,6 +84,44 @@ app.post("/auth/register", async (req, res) => {
     await user.save();
 
     res.status(201).json({ msg: "Usuario criado com sucesso" });
+  } catch (error) {
+    res.status(500).json({ msg: error });
+  }
+});
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email) {
+    return res.status(422).json({ msg: "O email deve ser informado!" });
+  }
+  if (!password) {
+    return res.status(422).json({ msg: "A senha deve ser informado!" });
+  }
+
+  const user = await User.findOne({ email: email });
+
+  if (!user) {
+    return res.status(404).json({ msg: "Usuario não encontrado!" });
+  }
+
+  const checkPassword = await bcrypt.compare(password, user.password);
+
+  if (!checkPassword) {
+    return res.status(422).json({ mgs: "Senha invalida, tente novamente " });
+  }
+
+  try {
+    const secret = process.env.SECRET;
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+      },
+      secret
+    );
+
+    res.status(200).json({ mgs: "Autenticação realizado com sucesso!", token });
   } catch (error) {
     res.status(500).json({ msg: error });
   }
