@@ -4,7 +4,6 @@ import bcrypt from "bcrypt"; //Criptografa senhas
 import jwt from "jsonwebtoken"; //Criar e validar tokens JWT
 import dotenv from "dotenv"; //Ambiente com arquivo .env
 import User from "./models/usuarioModels.js";
-import res from "express/lib/response.js";
 
 dotenv.config(); //Carregar as variaveis de ambientes do arquivo .evn
 
@@ -14,10 +13,10 @@ app.use(express.json());
 
 //Rota aberta
 app.get("/", (req, res) => {
-  res.status(200).json({ mgs: "Bem vindo a nossa API " });
+  res.status(200).json({ mgs: "Bem vindo a nossa API" });
 });
 
-app.get("user/:id", async (req, res) => {
+app.get("/user/:id", checktoken, async (req, res) => {
   const id = (res = URLSearchParams.id);
 
   const user = await User.findById(id, "-password");
@@ -77,7 +76,7 @@ app.post("/register", async (req, res) => {
   const user = new User({
     name,
     email,
-    passwordHast,
+    password: passwordHast,
   });
 
   try {
