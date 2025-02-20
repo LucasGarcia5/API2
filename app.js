@@ -13,7 +13,7 @@ app.use(express.json());
 
 //Rota aberta
 app.get("/", (req, res) => {
-  res.status(200).json({ mgs: "Bem vindo a nossa API" });
+  res.status(200).json({ msg: "Bem vindo a nossa API" });
 });
 
 app.get("/user/:id", checktoken, async (req, res) => {
@@ -22,7 +22,7 @@ app.get("/user/:id", checktoken, async (req, res) => {
   const user = await User.findById(id, "-password");
 
   if (!user) {
-    res.status(404).json({ mgs: "Usuario não encontrado" });
+    res.status(404).json({ msg: "Usuario não encontrado" });
   }
 
   res.status(200).json({ user });
@@ -32,7 +32,7 @@ function checktoken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) return res.status(401).json({ mgs: "Acesso negado" });
+  if (!token) return res.status(401).json({ msg: "Acesso negado" });
 
   try {
     const secret = process.env.SECRET;
@@ -107,7 +107,7 @@ app.post("/login", async (req, res) => {
   const checkPassword = await bcrypt.compare(password, user.password);
 
   if (!checkPassword) {
-    return res.status(422).json({ mgs: "Senha invalida, tente novamente " });
+    return res.status(422).json({ msg: "Senha invalida, tente novamente " });
   }
 
   try {
@@ -120,7 +120,7 @@ app.post("/login", async (req, res) => {
       secret
     );
 
-    res.status(200).json({ mgs: "Autenticação realizado com sucesso!", token });
+    res.status(200).json({ msg: "Autenticação realizado com sucesso!", token });
   } catch (error) {
     res.status(500).json({ msg: error });
   }
